@@ -38,7 +38,6 @@ services:
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: 6379
       PREFECT_REDIS_MESSAGING_DB: 0
-      PREFECT_API_URL: http://0.0.0.0:4200/api
     command: prefect server start --no-services
     ports:
       - "4200:4200"
@@ -60,7 +59,7 @@ services:
     command: prefect server services start
 
   prefect-worker:
-    image: prefecthq/prefect:3.4.20.dev2-python3.12-conda
+    image: prefecthq/prefect:3-latest
     depends_on:
       prefect-server:
         condition: service_started
