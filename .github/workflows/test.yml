@@ -16,11 +16,6 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > /tmp/github_actions_key
           chmod 600 /tmp/github_actions_key
 
-      - name: Test DNS and ping
-        run: |
-          echo "Testing connectivity to VPS..."
-          ping -c 3 ${{ secrets.VPS_HOST }}
-
       - name: Test SSH connection
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/github_actions_key \
