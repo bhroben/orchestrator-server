@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "prefect-compose.yml"
-          target: "~/prefect/"
+          target: "~"
           timeout: 120s
 
       - name: Deploy on VPS
