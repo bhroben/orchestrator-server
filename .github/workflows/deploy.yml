@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "prefect-compose.yml"
-          target: "~"
+          target: "~/prefect/"
           timeout: 120s
 
       - name: Deploy on VPS
@@ -32,5 +32,5 @@ jobs:
           script: |
             cd ~/prefect
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose -f prefect-compose.yml up -d --remove-orphans
             docker image prune -f
