@@ -31,6 +31,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/prefect
-            docker compose pull
+            docker compose -f prefect-compose.yml pull
+            PREFECT_API_URL=${{ secrets.PREFECT_API_URL }} \
             docker compose -f prefect-compose.yml up -d --remove-orphans
             docker image prune -f
