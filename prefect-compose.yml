@@ -59,8 +59,8 @@ services:
       PREFECT_REDIS_MESSAGING_DB: 0
     command: prefect server services start && prefect config set PREFECT_API_URL=http://0.0.0.0:4200/api
 
-  prefect-worker:
-    image: prefecthq/prefect:3-latest-conda
+  jobhunter-worker:
+    image: ghcr.io/bhroben/jobhunter_backend:main
 
     depends_on:
       prefect-server:

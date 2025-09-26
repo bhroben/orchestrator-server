@@ -30,6 +30,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
             cd ~/prefect
             docker compose -f prefect-compose.yml pull
             PREFECT_API_URL=${{ secrets.PREFECT_API_URL }} \
