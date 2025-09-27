@@ -33,6 +33,5 @@ jobs:
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
             cd ~/prefect
             docker compose -f prefect-compose.yml pull
-            PREFECT_API_URL=${{ secrets.PREFECT_API_URL }} \
             docker compose -f prefect-compose.yml up -d --remove-orphans
             docker image prune -f
