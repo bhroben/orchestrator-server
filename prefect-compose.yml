@@ -40,8 +40,8 @@ services:
       PREFECT_REDIS_MESSAGING_DB: 0
       PREFECT_API_URL: ${PREFECT_API_URL}
     command: prefect server start --no-services
-    ports:
-      - "4200:4200"
+    #ports:
+     # - "4200:4200"
 
   prefect-services:
     image: prefecthq/prefect:3-latest
