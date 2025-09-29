@@ -46,8 +46,8 @@ services:
       PREFECT_SERVER_CONCURRENCY_LEASE_STORAGE: prefect_redis.lease_storage
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: "6379"
-    #ports:
-      #- "4200:4200"
+    ports:
+      - "127.0.0.1:4200:4200"
 
   prefect-background:
     image: prefecthq/prefect:3-latest
