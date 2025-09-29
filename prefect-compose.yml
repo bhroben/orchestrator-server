@@ -8,68 +8,76 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prefect"]
-      interval: 5s
+      test: pg_isready -h localhost -U $$POSTGRES_USER
+      interval: 2s
       timeout: 5s
-      retries: 5
+      retries: 15
 
   redis:
     image: redis:7
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
-  prefect-server:
+  migrate:
     image: prefecthq/prefect:3-latest
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    command: prefect server database upgrade -y
     environment:
       PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgres:5432/prefect
-      PREFECT_SERVER_API_HOST: 0.0.0.0
+
+  prefect-api:
+    image: prefecthq/prefect:3-latest
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    deploy:
+      replicas: 1
+    command: prefect server start --host 0.0.0.0 --no-services
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgres:5432/prefect
+      PREFECT_API_DATABASE_MIGRATE_ON_START: "false"
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
+      PREFECT_SERVER_EVENTS_CAUSAL_ORDERING: prefect_redis.ordering
+      PREFECT_SERVER_CONCURRENCY_LEASE_STORAGE: prefect_redis.lease_storage
       PREFECT_REDIS_MESSAGING_HOST: redis
-      PREFECT_REDIS_MESSAGING_PORT: 6379
-      PREFECT_REDIS_MESSAGING_DB: 0
-      PREFECT_API_URL: 127.0.0.1 #${PREFECT_API_URL}
-    command: prefect server start --no-services
+      PREFECT_REDIS_MESSAGING_PORT: "6379"
     ports:
-     - "127.0.0.1:4200:4200"
+      - "4200:4200"
 
-
-  prefect-services:
+  prefect-background:
     image: prefecthq/prefect:3-latest
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_started
+    command: prefect server services start
     environment:
       PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgres:5432/prefect
+      PREFECT_API_DATABASE_MIGRATE_ON_START: "false"
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
+      PREFECT_SERVER_EVENTS_CAUSAL_ORDERING: prefect_redis.ordering
+      PREFECT_SERVER_CONCURRENCY_LEASE_STORAGE: prefect_redis.lease_storage
       PREFECT_REDIS_MESSAGING_HOST: redis
-      PREFECT_REDIS_MESSAGING_PORT: 6379
-      PREFECT_REDIS_MESSAGING_DB: 0
-    command: prefect server services start && prefect config set PREFECT_API_URL=http://0.0.0.0:4200/api
+      PREFECT_REDIS_MESSAGING_PORT: "6379"
 
   jobhunter-worker:
     image: ghcr.io/bhroben/jobhunter_backend:main
-
+    restart: always
     depends_on:
-      prefect-server:
+      prefect-background:
         condition: service_started
     environment:
-      PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_API_URL: http://prefect-api:4200/api
     command: prefect worker start --pool local-pool
 
 volumes:
   postgres_data:
-  redis_data:
