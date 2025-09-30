@@ -48,6 +48,11 @@ services:
       PREFECT_REDIS_MESSAGING_PORT: "6379"
     ports:
       - "127.0.0.1:4200:4200"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   prefect-background:
     image: prefecthq/prefect:3-latest
@@ -69,25 +74,15 @@ services:
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: "6379"
 
-  jobhunter-worker:
+  jobhunter-worker-local:
     image: ghcr.io/bhroben/jobhunter_backend:main
     restart: always
     depends_on:
-      prefect-background:
-        condition: service_started
+      prefect-api:
+        condition: service_healthy
     environment:
       PREFECT_API_URL: http://prefect-api:4200/api
     command: prefect worker start --pool local-pool
-
-  jobhunter-deploy:
-    image: ghcr.io/bhroben/jobhunter_backend:main
-    depends_on:
-      jobhunter-worker:
-        condition: service_started
-    environment:
-      PREFECT_API_URL: http://prefect-api:4200/api
-    command: python jobhunter/prefect_utils.py
-
 
 volumes:
   postgres_data:
