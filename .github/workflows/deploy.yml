@@ -31,6 +31,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
-            docker compose build --pull 
+            cd ~/prefect
+            docker compose build --pull always
             docker compose up -d --remove-orphans
             docker image prune -f

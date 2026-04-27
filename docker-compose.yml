@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: prefect
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
     healthcheck:
       test: pg_isready -h localhost -U $$POSTGRES_USER
       interval: 2s
@@ -26,6 +27,8 @@ services:
   redis:
     image: redis:7
     restart: unless-stopped
+    volumes:
+      - ./logs/redis:/var/log/redis
     deploy:
       resources:
         limits:
@@ -38,6 +41,8 @@ services:
 
   migrate:
     image: prefecthq/prefect:3-latest
+    env_file:
+      - .env
     # No restart policy here, since it runs once and finishes successfully
     depends_on:
       postgres:
@@ -45,6 +50,7 @@ services:
     command: prefect server database upgrade -y
     environment:
       PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgres:5432/prefect
+      PREFECT_API_AUTH_STRING: "${PREFECT_API_AUTH_STRING:-admin:pass}"
     logging:
       driver: "json-file"
       options:
@@ -53,7 +59,11 @@ services:
 
   prefect-api:
     image: prefecthq/prefect:3-latest
+    env_file:
+      - .env
     restart: unless-stopped
+    volumes:
+      - ./logs/prefect-api:/var/log/prefect-api
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -76,6 +86,8 @@ services:
       PREFECT_SERVER_CONCURRENCY_LEASE_STORAGE: prefect_redis.lease_storage
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: "6379"
+      PREFECT_SERVER_API_AUTH_STRING: "${PREFECT_SERVER_API_AUTH_STRING:-admin:pass}"
+      PREFECT_UI_API_URL: "${PREFECT_UI_API_URL:-http://localhost:4200/api}"
     ports:
       - "127.0.0.1:4200:4200"
     healthcheck:
@@ -91,7 +103,11 @@ services:
 
   prefect-background:
     image: prefecthq/prefect:3-latest
+    env_file:
+      - .env
     restart: unless-stopped
+    volumes:
+      - ./logs/prefect-background:/var/log/prefect-background
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -113,6 +129,8 @@ services:
       PREFECT_SERVER_CONCURRENCY_LEASE_STORAGE: prefect_redis.lease_storage
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: "6379"
+      PREFECT_SERVER_API_AUTH_STRING: "${PREFECT_SERVER_API_AUTH_STRING:-admin:pass}"
+      PREFECT_UI_API_URL: "${PREFECT_UI_API_URL:-http://localhost:4200/api}"
     logging:
       driver: "json-file"
       options:
@@ -121,7 +139,11 @@ services:
 
   jobhunter-worker-local:
     image: ghcr.io/bhroben/jobhunter_backend:main
+    env_file:
+      - .env
     restart: unless-stopped
+    volumes:
+      - ./logs/jobhunter-worker:/var/log/jobhunter-worker
     depends_on:
       prefect-api:
         condition: service_healthy
@@ -131,6 +153,7 @@ services:
           memory: 2G
     environment:
       PREFECT_API_URL: http://prefect-api:4200/api
+      PREFECT_API_AUTH_STRING: "${PREFECT_API_AUTH_STRING:-admin:pass}"
     command: prefect worker start --pool local-pool
     logging:
       driver: "json-file"
