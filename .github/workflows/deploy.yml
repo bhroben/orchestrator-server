@@ -32,5 +32,5 @@ jobs:
           script: |
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
             docker compose build --pull 
-            docker compose -d --remove-orphans
+            docker compose up -d --remove-orphans
             docker image prune -f
